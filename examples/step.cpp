@@ -4,7 +4,7 @@
 #include <fstream>
 #include <chrono>
 #include <thread>
-#include "headers/MLX90640_API.h"
+#include "mlx90640/MLX90640_API.h"
 #include "bcm2835.h"
 
 #define ANSI_COLOR_RED     "\x1b[31m"
