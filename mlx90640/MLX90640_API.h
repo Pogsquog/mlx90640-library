@@ -16,6 +16,8 @@
  */
 #ifndef _MLX640_API_H_
 #define _MLX640_API_H_
+
+#include "MLX90640_I2C_Driver.h"
     
   typedef struct
     {
