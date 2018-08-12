@@ -41,8 +41,8 @@ int main(){
     std::fstream fs;
 
 
-    bcm2835_init();
-    bcm2835_gpio_fsel(RPI_BPLUS_GPIO_J8_07, BCM2835_GPIO_FSEL_OUTP);
+    MLX90640_I2CInit();
+	MLX90640_I2CFreqSet(400000); //slow speed to read EEPROM
 
     MLX90640_SetDeviceMode(MLX_I2C_ADDR, 1);
     MLX90640_SetSubPageRepeat(MLX_I2C_ADDR, 1);
@@ -55,6 +55,8 @@ int main(){
     MLX90640_ExtractParameters(eeMLX90640, &mlx90640);
     int refresh = MLX90640_GetRefreshRate(MLX_I2C_ADDR);
     printf("EE Dumped...\n");
+	
+	MLX90640_I2CFreqSet(1000000); //high speed to read frame data
 
     int frames = 30;
     int subpage;

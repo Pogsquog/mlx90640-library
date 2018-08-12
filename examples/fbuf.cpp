@@ -76,9 +76,8 @@ int main(){
 
 	auto frame_time = std::chrono::microseconds(FRAME_TIME_MICROS + OFFSET_MICROS);
 
-	bcm2835_init();
-	bcm2835_gpio_fsel(RPI_BPLUS_GPIO_J8_07, BCM2835_GPIO_FSEL_OUTP);
-
+	MLX90640_I2CInit();
+	MLX90640_I2CFreqSet(400000); //slow speed to read EEPROM
 	MLX90640_SetDeviceMode(MLX_I2C_ADDR, 0);
 	MLX90640_SetSubPageRepeat(MLX_I2C_ADDR, 0);
 	switch(FPS){
@@ -112,6 +111,9 @@ int main(){
 	paramsMLX90640 mlx90640;
 	MLX90640_DumpEE(MLX_I2C_ADDR, eeMLX90640);
 	MLX90640_ExtractParameters(eeMLX90640, &mlx90640);
+	
+	MLX90640_I2CFreqSet(1000000); //high speed to read frame data
+	
 	fb_init();
 
 	while (1){

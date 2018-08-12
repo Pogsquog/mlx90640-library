@@ -18,22 +18,15 @@
 #include <iostream>
 #include <bcm2835.h>
 
-int init = 0;
-
 void MLX90640_I2CInit()
 {
-    
+	bcm2835_init();
+	bcm2835_gpio_fsel(RPI_BPLUS_GPIO_J8_07, BCM2835_GPIO_FSEL_OUTP);
+	bcm2835_i2c_begin();
 }
 
 int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddressRead, uint16_t *data)
 {
-    if(!init){
-        bcm2835_init();
-    	bcm2835_i2c_begin();
-	bcm2835_i2c_set_baudrate(400000);
-	init = 1;
-    }
-
     int result;
 
     char cmd[2] = {(char)(startAddress >> 8), (char)(startAddress & 0xFF)};
@@ -55,6 +48,7 @@ int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddr
 
 void MLX90640_I2CFreqSet(int freq)
 {
+	bcm2835_i2c_set_baudrate(freq);
 }
 
 int MLX90640_I2CWrite(uint8_t slaveAddr, uint16_t writeAddress, uint16_t data)
