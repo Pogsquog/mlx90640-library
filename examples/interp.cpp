@@ -34,8 +34,8 @@ void put_pixel_false_colour(int x, int y, double v) {
 	static float color[NUM_COLORS][3] = { {0,0,0}, {0,0,1}, {0,1,0}, {1,1,0}, {1,0,0}, {1,0,1}, {1,1,1} };
 	int idx1, idx2;
 	float fractBetween = 0;
-	float vmin = 5.0;
-	float vmax = 50.0;
+	float vmin = 20.0;
+	float vmax = 40.0;
 	float vrange = vmax-vmin;
 	v -= vmin;
 	v /= vrange;

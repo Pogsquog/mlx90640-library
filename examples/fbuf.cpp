@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cerrno>
-#include <zconf.h>
+#include <unistd.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
