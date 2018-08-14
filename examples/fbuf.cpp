@@ -5,6 +5,15 @@
 #include <chrono>
 #include <thread>
 #include <math.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cerrno>
+#include <zconf.h>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "mlx90640/MLX90640_API.h"
 #include "fb.h"
 #include "bcm2835.h"
@@ -67,10 +76,10 @@ void pulse(){
 }
 
 
-void diep(char *s)
+void diep(const char *s)
 {
-    perror(s);
-    exit(1);
+  perror(s);
+  exit(1);
 }
 
 
@@ -80,56 +89,60 @@ void diep(char *s)
 
 const int slen = sizeof(sockaddr_in);
 
-void udp_send(int socket, sockaddr_in& address, const uint8_t * buff, int buffersize )
+void udp_send(int socket, sockaddr_in * address, const uint8_t *buff, socklen_t buffersize)
 {
-    int result = sendto(s, buff, buffersize, 0, &address, slen);    
-    if (result==-1)
+  socklen_t slen = sizeof(sockaddr_in);
+  auto result = sendto(socket, buff, buffersize, 0, (const sockaddr*)address, slen);
+  if (result == -1)
+  {
+    if (errno != EAGAIN && errno != EWOULDBLOCK)
     {
-        if (errno != EAGAIN && result != EWOULDBLOCK)
-        {
-            diep("sendto()");
-        }
+      diep("sendto()");
     }
+  }
 }
 
-int udp_recieve(int socket, const uint8_t * buff, int max_buffersize )
-{    
-    sockaddr_in si_other
-    int bytes_received = recvfrom(s, buff, max_buffersize, 0, &si_other, &slen);
-    if (bytes_received==-1)
+int udp_recieve(int socket, uint8_t *buff, int max_buffersize)
+{
+  sockaddr_in si_other;
+  socklen_t slen = sizeof(sockaddr_in);
+  int bytes_received = recvfrom(socket, buff, max_buffersize, 0, (sockaddr*)&si_other, &slen);
+  if (bytes_received == -1)
+  {
+    if (errno != EAGAIN && errno != EWOULDBLOCK)
     {
-        if (errno != EAGAIN && result != EWOULDBLOCK)
-        {
-                diep("recvfrom()");
-        }                
+      diep("recvfrom()");
     }
-    else
-    {
-        printf("Received packet from %s:%d\nData: %s\n\n", inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port), buff);
-        return  bytes_received;
-    }
-    return 0    
+  }
+  else
+  {
+    printf("Received packet from %s:%d\nData: %s\n\n", inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port), buff);
+
+    udp_send(socket, &si_other, buff, bytes_received);
+    return bytes_received;
+  }
+  return 0;
 }
 
 int main()
 {    
     sockaddr_in si_me;
-    int s, i,     
-    char buff[BUFLEN];
+  int s;
+  uint8_t buff[BUFLEN];
 
-    if ((s=socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP))==-1)
-    {
-        diep("socket");
-    }
-    
-    memset((char *) &si_me, 0, sizeof(si_me));
-    si_me.sin_family = AF_INET;
-    si_me.sin_port = htons(PORT);
-    si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (bind(s, &si_me, sizeof(si_me))==-1)
-    {
-        diep("bind");
-    }
+  if ((s = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP)) == -1)
+  {
+    diep("socket");
+  }
+
+  memset((char *) &si_me, 0, sizeof(si_me));
+  si_me.sin_family = AF_INET;
+  si_me.sin_port = htons(PORT);
+  si_me.sin_addr.s_addr = htonl(INADDR_ANY);
+  if (bind(s, (sockaddr*)&si_me, sizeof(si_me)) == -1)
+  {
+    diep("bind");
+  }
 
 	static uint16_t eeMLX90640[832];
 	float emissivity = 1;
@@ -195,7 +208,7 @@ int main()
             put_pixel_false_colour((y*IMAGE_SCALE), (x*IMAGE_SCALE), val);
 		}
         
-        udp_recieve(s, buff, sizeof(buff) );
+	udp_recieve(s, buff, sizeof(buff));
         
 		auto end = std::chrono::system_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
