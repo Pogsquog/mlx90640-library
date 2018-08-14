@@ -59,13 +59,78 @@ void put_pixel_false_colour(int x, int y, double v) {
 	}
 }
 
+
 void pulse(){
 	bcm2835_gpio_write(RPI_BPLUS_GPIO_J8_07, 1);
 	std::this_thread::sleep_for(std::chrono::nanoseconds(50));
 	bcm2835_gpio_write(RPI_BPLUS_GPIO_J8_07, 0);
 }
 
-int main(){
+
+void diep(char *s)
+{
+    perror(s);
+    exit(1);
+}
+
+
+#define BUFLEN 512
+#define NPACK 10
+#define PORT 5005
+
+const int slen = sizeof(sockaddr_in);
+
+void udp_send(int socket, sockaddr_in& address, const uint8_t * buff, int buffersize )
+{
+    int result = sendto(s, buff, buffersize, 0, &address, slen);    
+    if (result==-1)
+    {
+        if (errno != EAGAIN && result != EWOULDBLOCK)
+        {
+            diep("sendto()");
+        }
+    }
+}
+
+int udp_recieve(int socket, const uint8_t * buff, int max_buffersize )
+{    
+    sockaddr_in si_other
+    int bytes_received = recvfrom(s, buff, max_buffersize, 0, &si_other, &slen);
+    if (bytes_received==-1)
+    {
+        if (errno != EAGAIN && result != EWOULDBLOCK)
+        {
+                diep("recvfrom()");
+        }                
+    }
+    else
+    {
+        printf("Received packet from %s:%d\nData: %s\n\n", inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port), buff);
+        return  bytes_received;
+    }
+    return 0    
+}
+
+int main()
+{    
+    sockaddr_in si_me;
+    int s, i,     
+    char buff[BUFLEN];
+
+    if ((s=socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP))==-1)
+    {
+        diep("socket");
+    }
+    
+    memset((char *) &si_me, 0, sizeof(si_me));
+    si_me.sin_family = AF_INET;
+    si_me.sin_port = htons(PORT);
+    si_me.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (bind(s, &si_me, sizeof(si_me))==-1)
+    {
+        diep("bind");
+    }
+
 	static uint16_t eeMLX90640[832];
 	float emissivity = 1;
 	uint16_t frame[834];
@@ -116,19 +181,22 @@ int main(){
 	
 	fb_init();
 
-	while (1){
+	while (1)
+    {
 		auto start = std::chrono::system_clock::now();
 		pulse();
 		MLX90640_GetFrameData(MLX_I2C_ADDR, frame);
 		eTa = MLX90640_GetTa(frame, &mlx90640);
 		MLX90640_CalculateTo(frame, &mlx90640, emissivity, eTa, mlx90640To);
 
-		for(int y = 0; y < 24; y++){
-			for(int x = 0; x < 32; x++){
-				float val = mlx90640To[32 * (23-y) + x];
-				put_pixel_false_colour((y*IMAGE_SCALE), (x*IMAGE_SCALE), val);
-			}
+		for(int y = 0; y < 24; y++) for(int x = 0; x < 32; x++)
+        {
+            float val = mlx90640To[32 * (23-y) + x];
+            put_pixel_false_colour((y*IMAGE_SCALE), (x*IMAGE_SCALE), val);
 		}
+        
+        udp_recieve(s, buff, sizeof(buff) );
+        
 		auto end = std::chrono::system_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		std::this_thread::sleep_for(std::chrono::microseconds(frame_time - elapsed));
@@ -136,5 +204,6 @@ int main(){
 
 	fb_cleanup();
 	bcm2835_close();
+    close(s);
 	return 0;
 }
