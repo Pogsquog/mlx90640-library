@@ -139,7 +139,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
   while (dataReady != 0 && cnt < 5)
   {
     error = MLX90640_I2CWrite(slaveAddr, 0x8000, 0x0030);
-    if (error == -1)
+    if (error != 0)
     {
       return error;
     }
