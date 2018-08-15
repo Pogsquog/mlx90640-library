@@ -112,9 +112,21 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
   uint8_t cnt = 0;
 
   std::cout << "F" << std::flush;
+
+  auto start = std::chrono::system_clock::now();
+
   dataReady = 0;
   while (dataReady == 0)
   {
+    auto end = std::chrono::system_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+    if (elapsed > 100)
+    {
+      std::cout << "timeout" << std::endl;
+      return -1;
+    }
+
     error = MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
     if (error != 0)
     {
@@ -166,7 +178,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     return error;
   }
 
-  return frameData[833];
+  return 0;
 }
 
 int MLX90640_ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
