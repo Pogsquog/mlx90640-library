@@ -123,15 +123,16 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     dataReady = statusRegister & 0x0008;
   }
 
-  std::cout << "P" << std::flush;
   while (dataReady != 0 && cnt < 5)
   {
+    std::cout << "1" << std::flush;
     error = MLX90640_I2CWrite(slaveAddr, 0x8000, 0x0030);
     if (error == -1)
     {
       return error;
     }
 
+    std::cout << "2" << std::flush;
     error = MLX90640_I2CRead(slaveAddr, 0x0400, 832, frameData);
     if (error != 0)
     {
@@ -139,6 +140,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
       return error;
     }
 
+    std::cout << "3" << std::flush;
     error = MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
     if (error != 0)
     {
@@ -154,6 +156,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     return -8;
   }
 
+  std::cout << "4" << std::flush;
   error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
   frameData[832] = controlRegister1;
   frameData[833] = statusRegister & 0x0001;
