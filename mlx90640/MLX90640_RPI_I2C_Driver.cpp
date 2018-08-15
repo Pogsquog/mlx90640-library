@@ -39,6 +39,8 @@ int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddr
 
     result = bcm2835_i2c_write_read_rs(cmd, 2, buf, nMemAddressRead*2);
 
+    if (result != BCM2835_I2C_REASON_OK) return -1;
+
     for(int count = 0; count < nMemAddressRead; count++){
 	int i = count << 1;
     	*p++ = ((uint16_t)buf[i] << 8) | buf[i+1];
