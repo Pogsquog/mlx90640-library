@@ -114,15 +114,15 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
   int error = 1;
   uint8_t cnt = 0;
 
-  auto start = std::chrono::system_clock::now();
+  auto start = std::chrono::high_resolution_clock::now();
 
   dataReady = 0;
   while (dataReady == 0)
   {
-    auto end = std::chrono::system_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = end - start;
 
-    if (elapsed.count() > std::chrono::microseconds(100000))
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() > 100)
     {
       std::cout << "timeout" << std::endl;
       return -1;
