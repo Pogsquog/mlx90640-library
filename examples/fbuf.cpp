@@ -117,11 +117,14 @@ bool udp_recieve(int socket, uint8_t *buff, int max_buffersize, sockaddr_in * so
     return false;
   }
 
-  printf("Received packet from %s:%d\nData: %s\n\n", inet_ntoa(source_info->sin_addr), ntohs(source_info->sin_port), buff);
+  //printf("Received packet from %s:%d\nData: %s\n\n", inet_ntoa(source_info->sin_addr), ntohs(source_info->sin_port), buff);
   return true;
 }
 
+
 void transmit_image(int s, float pDouble[768], sockaddr_in *pIn);
+
+
 int main()
 {
   sockaddr_in si_me, si_other;
