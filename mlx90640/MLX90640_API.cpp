@@ -18,6 +18,7 @@
 #include "MLX90640_API.h"
 #include <math.h>
 #include <stdio.h>
+#include <iostream>
 
 void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
 void ExtractPTATParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
@@ -69,6 +70,7 @@ int MLX90640_CheckInterrupt(uint8_t slaveAddr)
 
 void MLX90640_StartMeasurement(uint8_t slaveAddr, uint8_t subPage)
 {
+  std::cout << "S" << std::flush;
   uint16_t controlRegister1;
   uint16_t statusRegister;
   MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
@@ -109,6 +111,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
   int error = 1;
   uint8_t cnt = 0;
 
+  std::cout << "F" << std::flush;
   dataReady = 0;
   while (dataReady == 0)
   {
@@ -120,6 +123,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     dataReady = statusRegister & 0x0008;
   }
 
+  std::cout << "P" << std::flush;
   while (dataReady != 0 && cnt < 5)
   {
     error = MLX90640_I2CWrite(slaveAddr, 0x8000, 0x0030);
