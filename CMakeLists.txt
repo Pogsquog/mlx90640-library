@@ -37,6 +37,5 @@ add_executable(mlx90640_library ${SOURCE_FILES})
 
 if (${CMAKE_TARGET_ARCHITECTURES} STREQUAL "x86_64")
 else()
-    find_library( bcm2835_lib bcm2835 )
-    target_link_libraries( mlx90640_library bcm2835_lib )
+    target_link_libraries( mlx90640_library bcm2835 )
 endif()
