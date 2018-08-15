@@ -19,6 +19,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <iostream>
+#include <chrono>
 
 void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
 void ExtractPTATParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
