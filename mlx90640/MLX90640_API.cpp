@@ -86,21 +86,24 @@ void MLX90640_StartMeasurement(uint8_t slaveAddr, uint8_t subPage)
 
 int MLX90640_GetData(uint8_t slaveAddr, uint16_t *frameData)
 {
-  int error = 0;
   uint16_t statusRegister;
   uint16_t controlRegister1;
 
   // Get page data
-  error = MLX90640_I2CRead(slaveAddr, 0x0400, 832, frameData);
+  int error = MLX90640_I2CRead(slaveAddr, 0x0400, 832, frameData);
+  if (error != 0) return - 1;
 
   // Get status reguster
-  MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
+  error = MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
+  if (error != 0) return - 1;
 
   // Get control register
-  MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
+  error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
+  if (error != 0) return - 1;
 
   frameData[832] = controlRegister1;
   frameData[833] = statusRegister & 0x0001; // Populate the subpage number
+  return 0;
 }
 
 int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
@@ -117,9 +120,9 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
   while (dataReady == 0)
   {
     auto end = std::chrono::system_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::chrono::duration<std::chrono::milliseconds> elapsed = end - start;
 
-    if (elapsed > std::chrono::milliseconds(100))
+    if (elapsed.count() > 100)
     {
       std::cout << "timeout" << std::endl;
       return -1;
