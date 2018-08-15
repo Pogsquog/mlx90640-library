@@ -120,9 +120,9 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
   while (dataReady == 0)
   {
     auto end = std::chrono::system_clock::now();
-    std::chrono::duration<std::chrono::milliseconds> elapsed = end - start;
+    auto elapsed = end - start;
 
-    if (elapsed.count() > 100)
+    if (elapsed.count() > std::chrono::microseconds(100000))
     {
       std::cout << "timeout" << std::endl;
       return -1;
