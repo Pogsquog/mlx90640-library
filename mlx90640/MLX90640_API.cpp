@@ -71,7 +71,6 @@ int MLX90640_CheckInterrupt(uint8_t slaveAddr)
 
 void MLX90640_StartMeasurement(uint8_t slaveAddr, uint8_t subPage)
 {
-  std::cout << "S" << std::flush;
   uint16_t controlRegister1;
   uint16_t statusRegister;
   MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
@@ -112,8 +111,6 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
   int error = 1;
   uint8_t cnt = 0;
 
-  std::cout << "F" << std::flush;
-
   auto start = std::chrono::system_clock::now();
 
   dataReady = 0;
@@ -138,14 +135,12 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
 
   while (dataReady != 0 && cnt < 5)
   {
-    std::cout << "1" << std::flush;
     error = MLX90640_I2CWrite(slaveAddr, 0x8000, 0x0030);
     if (error == -1)
     {
       return error;
     }
 
-    std::cout << "2" << std::flush;
     error = MLX90640_I2CRead(slaveAddr, 0x0400, 832, frameData);
     if (error != 0)
     {
@@ -153,7 +148,6 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
       return error;
     }
 
-    std::cout << "3" << std::flush;
     error = MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
     if (error != 0)
     {
@@ -169,7 +163,6 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     return -8;
   }
 
-  std::cout << "4" << std::flush;
   error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
   frameData[832] = controlRegister1;
   frameData[833] = statusRegister & 0x0001;

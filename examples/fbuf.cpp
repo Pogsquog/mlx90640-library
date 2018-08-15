@@ -164,6 +164,10 @@ int main()
 
   auto frame_time = std::chrono::microseconds(FRAME_TIME_MICROS + OFFSET_MICROS);
 
+#ifdef __arm__
+  fb_init();
+#endif
+
   while (true)
   {
     MLX90640_I2CInit();
@@ -204,13 +208,8 @@ int main()
     MLX90640_ExtractParameters(eeMLX90640, &mlx90640);
     MLX90640_I2CFreqSet(1000000); //high speed to read frame data
 
-#ifdef __arm__
-    fb_init();
-#endif
-
     while (true)
     {
-      std::cout << "." << std::flush;
       auto start = std::chrono::system_clock::now();
       int result = MLX90640_GetFrameData(MLX_I2C_ADDR, frame);
       if (result != 0)
@@ -220,7 +219,6 @@ int main()
 
       eTa = MLX90640_GetTa(frame, &mlx90640);
       MLX90640_CalculateTo(frame, &mlx90640, emissivity, eTa, mlx90640To);
-      std::cout << "P" << std::flush;
 
 #ifdef __arm__
       for (int y = 0; y < 24; y++) for (int x = 0; x < 32; x++)
@@ -230,7 +228,6 @@ int main()
       }
 #endif
 
-      std::cout << "U" << std::flush;
       bool received_ping = udp_recieve(s, buff, sizeof(buff), &si_other);
       if (received_ping)
       {
@@ -239,7 +236,6 @@ int main()
 
       if (got_target)
       {
-        std::cout << "T" << std::flush;
         transmit_image(s, mlx90640To, &si_other);
       }
 
