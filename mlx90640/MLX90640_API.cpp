@@ -153,7 +153,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     printf("cnt > 4 error \n");
     return -8;
   }
-  //printf("count: %d \n", cnt);
+
   error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
   frameData[832] = controlRegister1;
   frameData[833] = statusRegister & 0x0001;
