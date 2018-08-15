@@ -122,7 +122,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     auto end = std::chrono::system_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-    if (elapsed > 100)
+    if (elapsed > std::chrono::microseconds(100))
     {
       std::cout << "timeout" << std::endl;
       return -1;
