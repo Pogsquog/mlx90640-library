@@ -15,16 +15,15 @@
 #include <arpa/inet.h>
 
 #include "MLX90640_API.h"
-#include "fb.h"
+//#include "fb.h"
 
-#ifdef __arm__
-#include "bcm2835.h"
-#else
-
-void bcm2835_close()
-{}
-
-#endif
+//#ifdef __arm__
+//#include "bcm2835.h"
+//#else
+//
+//void bcm2835_close()
+//{}
+//#endif
 
 #define MLX_I2C_ADDR 0x33
 
@@ -41,52 +40,51 @@ void bcm2835_close()
 // to account for this.
 #define OFFSET_MICROS 850
 
-void put_pixel_false_colour(int x, int y, double v)
-{
-  // Heatmap code borrowed from: http://www.andrewnoske.com/wiki/Code_-_heatmaps_and_color_gradients
-  const int NUM_COLORS = 7;
-  static float color[NUM_COLORS][3] = {{0, 0, 0},
-                                       {0, 0, 1},
-                                       {0, 1, 0},
-                                       {1, 1, 0},
-                                       {1, 0, 0},
-                                       {1, 0, 1},
-                                       {1, 1, 1}};
-  int idx1, idx2;
-  float fractBetween = 0;
-  float vmin = 5.0;
-  float vmax = 50.0;
-  float vrange = vmax - vmin;
-  v -= vmin;
-  v /= vrange;
-  if (v <= 0)
-  { idx1 = idx2 = 0; }
-  else if (v >= 1)
-  { idx1 = idx2 = NUM_COLORS - 1; }
-  else
-  {
-    v *= (NUM_COLORS - 1);
-    idx1 = floor(v);
-    idx2 = idx1 + 1;
-    fractBetween = v - float(idx1);
-  }
-
-  int ir, ig, ib;
-
-
-  ir = (int) ((((color[idx2][0] - color[idx1][0]) * fractBetween) + color[idx1][0]) * 255.0);
-  ig = (int) ((((color[idx2][1] - color[idx1][1]) * fractBetween) + color[idx1][1]) * 255.0);
-  ib = (int) ((((color[idx2][2] - color[idx1][2]) * fractBetween) + color[idx1][2]) * 255.0);
-
-  for (int px = 0; px < IMAGE_SCALE; px++)
-  {
-    for (int py = 0; py < IMAGE_SCALE; py++)
-    {
-      fb_put_pixel(x + px, y + py, ir, ig, ib);
-    }
-  }
-}
-
+// Heatmap code borrowed from: http://www.andrewnoske.com/wiki/Code_-_heatmaps_and_color_gradients
+//void put_pixel_false_colour(int x, int y, double v)
+//{
+//  const int NUM_COLORS = 7;
+//  static float color[NUM_COLORS][3] = {{0, 0, 0},
+//                                       {0, 0, 1},
+//                                       {0, 1, 0},
+//                                       {1, 1, 0},
+//                                       {1, 0, 0},
+//                                       {1, 0, 1},
+//                                       {1, 1, 1}};
+//  int idx1, idx2;
+//  float fractBetween = 0;
+//  float vmin = 5.0;
+//  float vmax = 50.0;
+//  float vrange = vmax - vmin;
+//  v -= vmin;
+//  v /= vrange;
+//  if (v <= 0)
+//  { idx1 = idx2 = 0; }
+//  else if (v >= 1)
+//  { idx1 = idx2 = NUM_COLORS - 1; }
+//  else
+//  {
+//    v *= (NUM_COLORS - 1);
+//    idx1 = floor(v);
+//    idx2 = idx1 + 1;
+//    fractBetween = v - float(idx1);
+//  }
+//
+//  int ir, ig, ib;
+//
+//
+//  ir = (int) ((((color[idx2][0] - color[idx1][0]) * fractBetween) + color[idx1][0]) * 255.0);
+//  ig = (int) ((((color[idx2][1] - color[idx1][1]) * fractBetween) + color[idx1][1]) * 255.0);
+//  ib = (int) ((((color[idx2][2] - color[idx1][2]) * fractBetween) + color[idx1][2]) * 255.0);
+//
+//  for (int px = 0; px < IMAGE_SCALE; px++)
+//  {
+//    for (int py = 0; py < IMAGE_SCALE; py++)
+//    {
+//      fb_put_pixel(x + px, y + py, ir, ig, ib);
+//    }
+//  }
+//}
 
 void diep(const char *s)
 {
@@ -165,7 +163,8 @@ int main()
   auto frame_time = std::chrono::microseconds(FRAME_TIME_MICROS + OFFSET_MICROS);
 
 #ifdef __arm__
-  fb_init();
+//  std::cout << "fb init\n";
+//  fb_init();
 #endif
 
   while (true)
@@ -176,9 +175,13 @@ int main()
     std::cout << "set frequency to 400khz\n";
     MLX90640_I2CFreqSet(400000); //slow speed to read EEPROM
 
-    std::cout << "";
+    std::cout << "Set device mode\n";
     MLX90640_SetDeviceMode(MLX_I2C_ADDR, 0);
+
+    std::cout << "set sub page repeat\n";
     MLX90640_SetSubPageRepeat(MLX_I2C_ADDR, 0);
+
+    std::cout << "set fps to " << FPS << "\n";
     switch (FPS)
     {
       case 1:
@@ -206,11 +209,15 @@ int main()
         printf("Unsupported framerate: %d", FPS);
         return 1;
     }
+
+    std::cout << "set chess mode\n";
     MLX90640_SetChessMode(MLX_I2C_ADDR);
 
     paramsMLX90640 mlx90640;
     MLX90640_DumpEE(MLX_I2C_ADDR, eeMLX90640);
     MLX90640_ExtractParameters(eeMLX90640, &mlx90640);
+
+    std::cout << "set frequency to 1MHz\n";
     MLX90640_I2CFreqSet(1000000); //high speed to read frame data
 
     while (true)
@@ -223,17 +230,19 @@ int main()
         break;
       }
 
-      eTa = MLX90640_GetTa(frame, &mlx90640);
-      MLX90640_CalculateTo(frame, &mlx90640, emissivity, eTa, mlx90640To);
+      //eTa = MLX90640_GetTa(frame, &mlx90640);
+      //MLX90640_CalculateTo(frame, &mlx90640, emissivity, eTa, mlx90640To);
+      MLX90640_GetImage(frame, &mlx90640, mlx90640To);
 
 #ifdef __arm__
-      for (int y = 0; y < 24; y++) for (int x = 0; x < 32; x++)
-      {
-        float val = mlx90640To[32 * (23 - y) + x];
-        put_pixel_false_colour((y * IMAGE_SCALE), (x * IMAGE_SCALE), val);
-      }
+//      for (int y = 0; y < 24; y++) for (int x = 0; x < 32; x++)
+//      {
+//        float val = mlx90640To[32 * (23 - y) + x];
+//        put_pixel_false_colour((y * IMAGE_SCALE), (x * IMAGE_SCALE), val);
+//      }
 #endif
 
+//      std::cout << ".\n";
       bool received_ping = udp_recieve(s, buff, sizeof(buff), &si_other);
       if (received_ping)
       {
@@ -247,18 +256,29 @@ int main()
 
       auto end = std::chrono::system_clock::now();
       auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-      std::this_thread::sleep_for(std::chrono::microseconds(frame_time - elapsed));
+      auto sleep_time = std::chrono::microseconds(frame_time - elapsed);
+
+      if (sleep_time <= std::chrono::microseconds(0))
+      {
+        std::cout << "uh oh, maybe I missed a frame, sleep time = " << sleep_time.count();
+      }
+      else
+      {
+        std::this_thread::sleep_for(sleep_time);
+      }
     }
 
-    std::cout << "closing bcm2835\n";
-    bcm2835_close();
-    std::cout << "done\n";
+//    std::cout << "closing bcm2835\n";
+//    bcm2835_close();
+//    std::cout << "done\n";
   }
 
 #ifdef __arm__
-  fb_cleanup();
+//  std::cout << "fb cleanup\n";
+//  fb_cleanup();
 #endif
 
+  std::cout << "close socket\n";
   close(s);
   return 0;
 }

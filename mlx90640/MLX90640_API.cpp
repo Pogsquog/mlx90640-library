@@ -157,6 +157,8 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
 
   uint8_t error_count = 0;
   uint16_t dataReady = 0;
+
+  // std::cout << "0\n";
   while (dataReady == 0 && error_count < 3)
   {
     auto end = std::chrono::high_resolution_clock::now();
@@ -168,17 +170,21 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
       return -1;
     }
 
+    // maybe expect errors reading the i2c here, if the device is busy when we read
     error = MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
-//    if (error != 0)
-//    {
-//      std::cout << "i2c fail: " << __LINE__ << "\n";
-//      return error;
-//    }
-    ++error_count;
+    if (error != 0)
+    {
+      std::cout << "i2c fail: " << __LINE__ << error << "\n";
+      //return error;
+
+      ++error_count;
+    }
+
     dataReady = statusRegister & 0x0008;
   }
 
 
+  // std::cout << "1\n";
   // clear the new data available in ram bit
   error = MLX90640_I2CWrite(slaveAddr, 0x8000, 0x0030);
   if (error != 0)
@@ -187,6 +193,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     return error;
   }
 
+  // std::cout << "2\n";
   // read the frame
   error = MLX90640_I2CRead(slaveAddr, 0x0400, 832, frameData);
   if (error != 0)
@@ -203,6 +210,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
 //      return error;
 //    }
 
+  // std::cout << "3\n";
   error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
   if (error != 0)
   {

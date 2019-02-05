@@ -38,7 +38,7 @@ int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddr
 
   if (result != BCM2835_I2C_REASON_OK)
   {
-    std::cout << "error reading" << std::endl;
+    std::cout << "error reading: " << result << std::endl;
     return -1;
   }
 
@@ -67,7 +67,7 @@ int MLX90640_I2CWrite(uint8_t slaveAddr, uint16_t writeAddress, uint16_t data)
 
   if (result != BCM2835_I2C_REASON_OK)
   {
-    std::cout << "error writing" << std::endl;
+    std::cout << "error writing: " << result << std::endl;
     return -1;
   }
 
