@@ -59,13 +59,21 @@ int MLX90640_SetInterleavedMode(uint8_t slaveAddr);
 
 int MLX90640_DumpEE(uint8_t slaveAddr, uint16_t *eeData)
 {
-  return MLX90640_I2CRead(slaveAddr, 0x2400, 832, eeData);
+  int result = MLX90640_I2CRead(slaveAddr, 0x2400, 832, eeData);
+  if (result != 0)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+  }
+  return result;
 }
 
 int MLX90640_CheckInterrupt(uint8_t slaveAddr)
 {
   uint16_t statusRegister;
-  MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
+  if (MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister) != 0)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+  }
   return (statusRegister & 0b1000) > 0;
 }
 
@@ -73,15 +81,36 @@ void MLX90640_StartMeasurement(uint8_t slaveAddr, uint8_t subPage)
 {
   uint16_t controlRegister1;
   uint16_t statusRegister;
-  MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
+  int error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
+  if (error)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+  }
+
   controlRegister1 &= 0b1111111111101111;
   controlRegister1 |= subPage << 4;
-  MLX90640_I2CWrite(slaveAddr, 0x800D, controlRegister1);
-  MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
+
+  error = MLX90640_I2CWrite(slaveAddr, 0x800D, controlRegister1);
+  if (error)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+  }
+
+  error = MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
+  if (error)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+  }
+
   statusRegister &= 0b1111111111110111; // Clear b3: new data available in RAM
   statusRegister |= 0b0000000000110000; // Set b5: start of measurement
+
   // Set b4: enable RAM overwrite
-  MLX90640_I2CWrite(slaveAddr, 0x8000, statusRegister);
+  error = MLX90640_I2CWrite(slaveAddr, 0x8000, statusRegister);
+  if (error)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+  }
 }
 
 int MLX90640_GetData(uint8_t slaveAddr, uint16_t *frameData)
@@ -91,15 +120,27 @@ int MLX90640_GetData(uint8_t slaveAddr, uint16_t *frameData)
 
   // Get page data
   int error = MLX90640_I2CRead(slaveAddr, 0x0400, 832, frameData);
-  if (error != 0) return - 1;
+  if (error != 0)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+    return - 1;
+  }
 
   // Get status reguster
   error = MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
-  if (error != 0) return - 1;
+  if (error != 0)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+    return - 1;
+  }
 
   // Get control register
   error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
-  if (error != 0) return - 1;
+  if (error != 0)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+    return - 1;
+  }
 
   frameData[832] = controlRegister1;
   frameData[833] = statusRegister & 0x0001; // Populate the subpage number
@@ -108,16 +149,15 @@ int MLX90640_GetData(uint8_t slaveAddr, uint16_t *frameData)
 
 int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
 {
-  uint16_t dataReady = 1;
   uint16_t controlRegister1;
   uint16_t statusRegister;
   int error = 1;
-  uint8_t cnt = 0;
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  dataReady = 0;
-  while (dataReady == 0)
+  uint8_t error_count = 0;
+  uint16_t dataReady = 0;
+  while (dataReady == 0 && error_count < 3)
   {
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = end - start;
@@ -129,51 +169,48 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     }
 
     error = MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
-    if (error != 0)
-    {
-      return error;
-    }
+//    if (error != 0)
+//    {
+//      std::cout << "i2c fail: " << __LINE__ << "\n";
+//      return error;
+//    }
+    ++error_count;
     dataReady = statusRegister & 0x0008;
   }
 
-  while (dataReady != 0 && cnt < 5)
-  {
-    error = MLX90640_I2CWrite(slaveAddr, 0x8000, 0x0030);
-    if (error != 0)
-    {
-      return error;
-    }
 
-    error = MLX90640_I2CRead(slaveAddr, 0x0400, 832, frameData);
-    if (error != 0)
-    {
-      printf("frameData read error \n");
-      return error;
-    }
-
-    error = MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
-    if (error != 0)
-    {
-      return error;
-    }
-    dataReady = statusRegister & 0x0008;
-    cnt = cnt + 1;
-  }
-
-  if (cnt > 4)
-  {
-    printf("cnt > 4 error \n");
-    return -8;
-  }
-
-  error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
-  frameData[832] = controlRegister1;
-  frameData[833] = statusRegister & 0x0001;
-
+  // clear the new data available in ram bit
+  error = MLX90640_I2CWrite(slaveAddr, 0x8000, 0x0030);
   if (error != 0)
   {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
     return error;
   }
+
+  // read the frame
+  error = MLX90640_I2CRead(slaveAddr, 0x0400, 832, frameData);
+  if (error != 0)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+    return error;
+  }
+
+    // update the status register and check to see if we are still on the same frame...
+//    error = MLX90640_I2CRead(slaveAddr, 0x8000, 1, &statusRegister);
+//    if (error != 0)
+//    {
+//      std::cout << "i2c fail: " << __LINE__ << "\n";
+//      return error;
+//    }
+
+  error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
+  if (error != 0)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+    return error;
+  }
+  frameData[832] = controlRegister1;
+  frameData[833] = statusRegister & 0x0001;
 
   return 0;
 }
@@ -219,7 +256,16 @@ int MLX90640_SetResolution(uint8_t slaveAddr, uint8_t resolution)
   if (error == 0)
   {
     value = (controlRegister1 & 0xF3FF) | value;
+
     error = MLX90640_I2CWrite(slaveAddr, 0x800D, value);
+    if (error)
+    {
+      std::cout << "i2c fail: " << __LINE__ << "\n";
+    }
+  }
+  else
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
   }
 
   return error;
@@ -236,6 +282,7 @@ int MLX90640_GetCurResolution(uint8_t slaveAddr)
   error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
   if (error != 0)
   {
+    std::cout << "Get Cur Resolution failed\n";
     return error;
   }
   resolutionRAM = (controlRegister1 & 0x0C00) >> 10;
@@ -257,7 +304,16 @@ int MLX90640_SetRefreshRate(uint8_t slaveAddr, uint8_t refreshRate)
   if (error == 0)
   {
     value = (controlRegister1 & 0xFC7F) | value;
+
     error = MLX90640_I2CWrite(slaveAddr, 0x800D, value);
+    if (error)
+    {
+      std::cout << "i2c fail: " << __LINE__ << "\n";
+    }
+  }
+  else
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
   }
 
   return error;
@@ -274,6 +330,7 @@ int MLX90640_GetRefreshRate(uint8_t slaveAddr)
   error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
   if (error != 0)
   {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
     return error;
   }
   refreshRate = (controlRegister1 & 0x0380) >> 7;
@@ -295,6 +352,14 @@ int MLX90640_SetInterleavedMode(uint8_t slaveAddr)
   {
     value = (controlRegister1 & 0xEFFF);
     error = MLX90640_I2CWrite(slaveAddr, 0x800D, value);
+    if (error)
+    {
+      std::cout << "i2c fail: " << __LINE__ << "\n";
+    }
+  }
+  else
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
   }
 
   return error;
@@ -314,6 +379,14 @@ int MLX90640_SetChessMode(uint8_t slaveAddr)
   {
     value = (controlRegister1 | 0x1000);
     error = MLX90640_I2CWrite(slaveAddr, 0x800D, value);
+    if (error)
+    {
+      std::cout << "i2c fail: " << __LINE__ << "\n";
+    }
+  }
+  else
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
   }
 
   return error;
@@ -330,6 +403,7 @@ int MLX90640_GetCurMode(uint8_t slaveAddr)
   error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
   if (error != 0)
   {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
     return error;
   }
   modeRAM = (controlRegister1 & 0x1000) >> 12;
@@ -351,7 +425,16 @@ int MLX90640_SetDeviceMode(uint8_t slaveAddr, uint8_t deviceMode)
   if (error == 0)
   {
     value = (controlRegister1 & 0b1111111111111101) | value;
+
     error = MLX90640_I2CWrite(slaveAddr, 0x800D, value);
+    if (error)
+    {
+      std::cout << "i2c fail: " << __LINE__ << "\n";
+    }
+  }
+  else
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
   }
 
   return error;
@@ -371,7 +454,16 @@ int MLX90640_SetSubPageRepeat(uint8_t slaveAddr, uint8_t subPageRepeat)
   if (error == 0)
   {
     value = (controlRegister1 & 0b1111111111110111) | value;
+
     error = MLX90640_I2CWrite(slaveAddr, 0x800D, value);
+    if (error)
+    {
+      std::cout << "i2c fail: " << __LINE__ << "\n";
+    }
+  }
+  else
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
   }
 
   return error;
@@ -391,7 +483,16 @@ int MLX90640_SetSubPage(uint8_t slaveAddr, uint8_t subPage)
   if (error == 0)
   {
     value = (controlRegister1 & 0b1111111110001111) | value;
+
     error = MLX90640_I2CWrite(slaveAddr, 0x800D, value);
+    if (error)
+    {
+      std::cout << "i2c fail: " << __LINE__ << "\n";
+    }
+  }
+  else
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
   }
 
   return error;

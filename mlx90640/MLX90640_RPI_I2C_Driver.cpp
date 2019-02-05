@@ -36,7 +36,11 @@ int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddr
 
   int result = bcm2835_i2c_write_read_rs(cmd, 2, buf, nMemAddressRead * 2);
 
-  if (result != BCM2835_I2C_REASON_OK) return -1;
+  if (result != BCM2835_I2C_REASON_OK)
+  {
+    std::cout << "error reading" << std::endl;
+    return -1;
+  }
 
   for (int count = 0; count < nMemAddressRead; ++count)
   {
@@ -61,7 +65,11 @@ int MLX90640_I2CWrite(uint8_t slaveAddr, uint16_t writeAddress, uint16_t data)
 
   auto result = bcm2835_i2c_write(cmd, 4);
 
-  if (result != BCM2835_I2C_REASON_OK) return -1;
+  if (result != BCM2835_I2C_REASON_OK)
+  {
+    std::cout << "error writing" << std::endl;
+    return -1;
+  }
 
   return 0;
 }

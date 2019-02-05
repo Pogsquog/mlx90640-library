@@ -96,7 +96,7 @@ void diep(const char *s)
 
 
 #define BUFLEN 512
-#define PORT 5005
+#define PORT 5222
 
 void udp_send(int socket, sockaddr_in *address, const uint8_t *buff, socklen_t buffersize)
 {
@@ -170,8 +170,13 @@ int main()
 
   while (true)
   {
+    std::cout << "I2c init\n";
     MLX90640_I2CInit();
+
+    std::cout << "set frequency to 400khz\n";
     MLX90640_I2CFreqSet(400000); //slow speed to read EEPROM
+
+    std::cout << "";
     MLX90640_SetDeviceMode(MLX_I2C_ADDR, 0);
     MLX90640_SetSubPageRepeat(MLX_I2C_ADDR, 0);
     switch (FPS)
@@ -214,6 +219,7 @@ int main()
       int result = MLX90640_GetFrameData(MLX_I2C_ADDR, frame);
       if (result != 0)
       {
+        std::cout << "breaking from capture loop\n";
         break;
       }
 
@@ -244,10 +250,12 @@ int main()
       std::this_thread::sleep_for(std::chrono::microseconds(frame_time - elapsed));
     }
 
+    std::cout << "closing bcm2835\n";
     bcm2835_close();
+    std::cout << "done\n";
   }
 
-#ifdef __arm
+#ifdef __arm__
   fb_cleanup();
 #endif
 
