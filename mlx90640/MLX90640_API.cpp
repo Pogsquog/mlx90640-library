@@ -186,12 +186,12 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
 
   // std::cout << "1\n";
   // clear the new data available in ram bit
-  error = MLX90640_I2CWrite(slaveAddr, 0x8000, 0x0030);
-  if (error != 0)
-  {
-    std::cout << "i2c fail: " << __LINE__ << "\n";
-    return error;
-  }
+//  error = MLX90640_I2CWrite(slaveAddr, 0x8000, 0x0030);
+//  if (error != 0)
+//  {
+//    std::cout << "i2c fail: " << __LINE__ << "\n";
+//    return error;
+//  }
 
   // std::cout << "2\n";
   // read the frame
@@ -211,6 +211,7 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
 //    }
 
   // std::cout << "3\n";
+  // read the control register
   error = MLX90640_I2CRead(slaveAddr, 0x800D, 1, &controlRegister1);
   if (error != 0)
   {
@@ -218,7 +219,15 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     return error;
   }
   frameData[832] = controlRegister1;
-  frameData[833] = statusRegister & 0x0001;
+  frameData[833] = statusRegister & 0x0001; // get the page
+
+  // clear the data available in ram bit
+  error = MLX90640_I2CWrite(slaveAddr, 0x8000, 0x0030);
+  if (error != 0)
+  {
+    std::cout << "i2c fail: " << __LINE__ << "\n";
+    return error;
+  }
 
   return 0;
 }
