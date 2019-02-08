@@ -18,19 +18,8 @@
 #include <sched.h>
 
 #include "MLX90640_API.h"
-//#include "fb.h"
-
-//#ifdef __arm__
-//#include "bcm2835.h"
-//#else
-//
-//void bcm2835_close()
-//{}
-//#endif
 
 #define MLX_I2C_ADDR 0x33
-
-#define IMAGE_SCALE 5
 
 // Valid frame rates are 1, 2, 4, 8, 16, 32 and 64
 // The i2c baudrate is set to 1mhz to support these
@@ -43,52 +32,6 @@ constexpr int FRAME_TIME_MICROS = (_1_MHZ/ (FPS ? FPS : 0.5));
 // This offset is added to the FRAME_TIME_MICROS
 // to account for this.
 #define OFFSET_MICROS 850
-
-// Heatmap code borrowed from: http://www.andrewnoske.com/wiki/Code_-_heatmaps_and_color_gradients
-//void put_pixel_false_colour(int x, int y, double v)
-//{
-//  const int NUM_COLORS = 7;
-//  static float color[NUM_COLORS][3] = {{0, 0, 0},
-//                                       {0, 0, 1},
-//                                       {0, 1, 0},
-//                                       {1, 1, 0},
-//                                       {1, 0, 0},
-//                                       {1, 0, 1},
-//                                       {1, 1, 1}};
-//  int idx1, idx2;
-//  float fractBetween = 0;
-//  float vmin = 5.0;
-//  float vmax = 50.0;
-//  float vrange = vmax - vmin;
-//  v -= vmin;
-//  v /= vrange;
-//  if (v <= 0)
-//  { idx1 = idx2 = 0; }
-//  else if (v >= 1)
-//  { idx1 = idx2 = NUM_COLORS - 1; }
-//  else
-//  {
-//    v *= (NUM_COLORS - 1);
-//    idx1 = floor(v);
-//    idx2 = idx1 + 1;
-//    fractBetween = v - float(idx1);
-//  }
-//
-//  int ir, ig, ib;
-//
-//
-//  ir = (int) ((((color[idx2][0] - color[idx1][0]) * fractBetween) + color[idx1][0]) * 255.0);
-//  ig = (int) ((((color[idx2][1] - color[idx1][1]) * fractBetween) + color[idx1][1]) * 255.0);
-//  ib = (int) ((((color[idx2][2] - color[idx1][2]) * fractBetween) + color[idx1][2]) * 255.0);
-//
-//  for (int px = 0; px < IMAGE_SCALE; px++)
-//  {
-//    for (int py = 0; py < IMAGE_SCALE; py++)
-//    {
-//      fb_put_pixel(x + px, y + py, ir, ig, ib);
-//    }
-//  }
-//}
 
 void set_realtime_priority()
 {
@@ -214,11 +157,6 @@ int main()
 
     auto frame_time = std::chrono::microseconds(FRAME_TIME_MICROS + OFFSET_MICROS);
 
-#ifdef __arm__
-//  std::cout << "fb init\n";
-//  fb_init();
-#endif
-
     while (true)
     {
         std::cout << "I2c init\n";
@@ -282,15 +220,6 @@ int main()
             MLX90640_CalculateTo(frame, &mlx90640, emissivity, eTa, mlx90640To);
             //MLX90640_GetImage(frame, &mlx90640, mlx90640To);
 
-#ifdef __arm__
-//      for (int y = 0; y < 24; y++) for (int x = 0; x < 32; x++)
-//      {
-//        float val = mlx90640To[32 * (23 - y) + x];
-//        put_pixel_false_colour((y * IMAGE_SCALE), (x * IMAGE_SCALE), val);
-//      }
-#endif
-
-//      std::cout << ".\n";
             bool received_ping = udp_recieve(s, buff, sizeof(buff), &si_other);
             if (received_ping)
             {
@@ -315,16 +244,7 @@ int main()
                 std::this_thread::sleep_for(sleep_time);
             }
         }
-
-//    std::cout << "closing bcm2835\n";
-//    bcm2835_close();
-//    std::cout << "done\n";
     }
-
-#ifdef __arm__
-//  std::cout << "fb cleanup\n";
-//  fb_cleanup();
-#endif
 
     std::cout << "close socket\n";
     close(s);
