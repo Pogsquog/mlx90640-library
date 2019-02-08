@@ -34,8 +34,9 @@
 
 // Valid frame rates are 1, 2, 4, 8, 16, 32 and 64
 // The i2c baudrate is set to 1mhz to support these
-#define FPS 32
-#define FRAME_TIME_MICROS (1000000/FPS)
+constexpr int _1_MHZ = 1000000;
+constexpr int FPS = 32;
+constexpr int FRAME_TIME_MICROS = (_1_MHZ/ (FPS ? FPS : 0.5));
 
 // Despite the framerate being ostensibly FPS hz
 // The frame is often not ready in time
@@ -265,7 +266,7 @@ int main()
         MLX90640_ExtractParameters(eeMLX90640, &mlx90640);
 
         std::cout << "set frequency to 1MHz\n";
-        MLX90640_I2CFreqSet(1000000); //high speed to read frame data
+        MLX90640_I2CFreqSet(_1_MHZ); //high speed to read frame data
 
         while (true)
         {
@@ -277,7 +278,7 @@ int main()
                 break;
             }
 
-            //eTa = MLX90640_GetTa(frame, &mlx90640);
+            eTa = MLX90640_GetTa(frame, &mlx90640);
             MLX90640_CalculateTo(frame, &mlx90640, emissivity, eTa, mlx90640To);
             //MLX90640_GetImage(frame, &mlx90640, mlx90640To);
 
