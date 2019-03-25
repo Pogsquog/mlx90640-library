@@ -156,6 +156,7 @@ int main()
     static uint16_t data[768 * sizeof(float)];
 
     auto frame_time = std::chrono::microseconds(FRAME_TIME_MICROS + OFFSET_MICROS);
+    std::cout << "frame time: " << frame_time.count() << " microseconds\n";
 
     while (true)
     {
@@ -233,16 +234,19 @@ int main()
 
             auto end = std::chrono::system_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+            std::cout << "elapsed time: " << elapsed.count() << " microseconds\n";
+
             auto sleep_time = std::chrono::microseconds(frame_time - elapsed);
 
-            if (sleep_time <= std::chrono::microseconds(0))
-            {
-                //std::cout << "uh oh, maybe I missed a frame, sleep time = " << sleep_time.count() << std::endl;
-            }
-            else
-            {
-                std::this_thread::sleep_for(sleep_time);
-            }
+//            if (sleep_time <= std::chrono::microseconds(0))
+//            {
+//                std::cout << "uh oh, maybe I missed a frame, sleep time = " << sleep_time.count() << "\n";
+//            }
+//            else
+//            {
+//                std::this_thread::sleep_for(sleep_time);
+//            }
         }
     }
 
