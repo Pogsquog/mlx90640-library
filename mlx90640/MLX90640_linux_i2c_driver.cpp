@@ -21,7 +21,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <linux/i2c-dev.h>
-//#include <linux/i2c.h>
+#include <linux/i2c.h>
 #include <sys/ioctl.h>
 
 int i2c_fd = 0;
